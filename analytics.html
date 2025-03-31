@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ad Performance Analytics</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="analytics.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="analytics-page">
+        <nav class="analytics-nav">
+            <a href="index.html" class="back-btn">← Back to Scraper</a>
+            <div class="analytics-header">
+                <h1>Ad Performance Analytics</h1>
+                <div class="analytics-meta"></div>
+            </div>
+        </nav>
+        
+        <div class="analytics-grid">
+            <div class="chart-card">
+                <h3>Engagement Overview</h3>
+                <canvas id="mainEngagementChart"></canvas>
+            </div>
+            
+            <div class="chart-card">
+                <h3>Conversion Funnel</h3>
+                <canvas id="funnelChart"></canvas>
+            </div>
+            
+            <div class="chart-card wide">
+                <h3>Performance Timeline</h3>
+                <canvas id="timelineChart"></canvas>
+            </div>
+            
+            <div class="chart-card">
+                <h3>Audience Demographics</h3>
+                <canvas id="demographicsChart"></canvas>
+            </div>
+            
+            <div class="chart-card">
+                <h3>Device Distribution</h3>
+                <canvas id="deviceChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Add error handling for page load
+        window.addEventListener('error', function(e) {
+            console.error('Page Error:', e.error);
+            document.querySelector('.analytics-grid').innerHTML = `
+                <div class="error-state">
+                    <h2>Something went wrong</h2>
+                    <p>Please return to the main page and try again.</p>
+                </div>
+            `;
+        });
+    </script>
+    <script src="analytics.js"></script>
+</body>
+</html>

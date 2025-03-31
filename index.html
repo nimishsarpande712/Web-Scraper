@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scraped Data Viewer</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <!-- Spline Viewer Script -->
+    <script type="module" src="https://prod.spline.design/viewer/js/spline.viewer.js"></script>
+    <!-- GSAP for Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <!-- Framer Motion (via CDN for simplicity) -->
+    <script src="https://unpkg.com/framer-motion@10.16.4/dist/framer-motion.js"></script>
+    <!-- Add Chart.js CDN before your script.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+</head>
+<body>
+    <!-- Spline 3D Background -->
+    <spline-viewer 
+        url="https://app.spline.design/file/8a4e5128-058c-485c-acf8-10f89bff8aa7" 
+        id="spline-background"
+        loading-anim-type="spinner-small-dark"
+    ></spline-viewer>
+
+    <!-- Decorative Elements -->
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+    <div class="glow-orb orb-3"></div>
+
+    <!-- Main Content -->
+    <div class="container">
+        <h1>Scraped Data Explorer</h1>
+        
+        <!-- Add Server Status -->
+        <div class="server-status">
+            <span id="server-indicator" class="status-indicator">Server Status: Checking...</span>
+            <span id="gemini-indicator" class="status-indicator">Gemini API: Checking...</span>
+        </div>
+
+        <!-- Add URL Input Form -->
+        <div class="url-input-container">
+            <input type="url" id="url-input" placeholder="Enter URL to scrape..." class="url-input">
+            <button id="scrape-btn" class="primary-btn">Scrape Ads</button>
+        </div>
+
+        <div id="data-container" class="data-container">
+            <p class="loading">Enter a URL and click Scrape Ads to begin...</p>
+        </div>
+        
+        <!-- Remove or hide the original refresh button -->
+        <button id="refresh-btn" style="display: none;"><i class="fas fa-sync-alt"></i> Refresh Data</button>
+
+        <!-- Analytics Dashboard Section -->
+        <div class="dashboard-container">
+            <h2>Ad Analytics Dashboard</h2>
+            <div class="analytics-grid">
+                <div class="analytic-card">
+                    <i class="fas fa-eye card-icon"></i>
+                    <h3>Impressions</h3>
+                    <p id="impressions">0</p>
+                </div>
+                <div class="analytic-card">
+                    <i class="fas fa-mouse-pointer card-icon"></i>
+                    <h3>Click-Through Rate</h3>
+                    <p id="ctr">0%</p>
+                </div>
+                <div class="analytic-card">
+                    <i class="fas fa-check-circle card-icon"></i>
+                    <h3>Conversions</h3>
+                    <p id="conversions">0</p>
+                </div>
+            </div>
+            <!-- Chart Area -->
+            <div class="chart-container">
+                <div class="chart-header">
+                    <h3>Performance Trends</h3>
+                    <div class="chart-controls">
+                        <button class="chart-btn active" data-period="weekly">Weekly</button>
+                        <button class="chart-btn" data-period="monthly">Monthly</button>
+                        <a href="analytics.html" class="view-details-btn">View Full Analytics</a>
+                    </div>
+                </div>
+                <div class="charts-grid">
+                    <div class="chart-wrapper">
+                        <canvas id="engagementChart"></canvas>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="conversionChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
