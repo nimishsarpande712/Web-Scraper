@@ -59,12 +59,13 @@ document.addEventListener('DOMContentLoaded', () => {
             geminiIndicator.textContent = `Gemini API: ${data.geminiAPI ? 'Connected' : 'Disconnected'}`;
             geminiIndicator.className = `status-indicator ${data.geminiAPI ? 'online' : 'offline'}`;
             
-            // Update server status in data container
+            // Update server status in data container with suggestions
             if (!urlInput.value.trim()) {
                 dataContainer.innerHTML = `
                     <div class="server-status-message">
                         <p class="status online">Server Status: Online</p>
                         <p>Enter a URL and click Scrape Data to begin...</p>
+                        ${generateUrlSuggestions()}
                     </div>
                 `;
             }
@@ -84,6 +85,26 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             return false; // Server is offline
         }
+    }
+
+    // Add helper function to generate URL suggestions
+    function generateUrlSuggestions() {
+        return `
+            <div class="suggestions-container" style="margin-top: 20px;">
+                <h4 style="color: #00ddeb; margin-bottom: 15px;">Try these sample URLs:</h4>
+                <ul class="suggestion-list" style="list-style: none; padding: 0;">
+                    <li onclick="document.getElementById('url-input').value='https://www.amazon.com/dp/B08N5KWB9H'">
+                        Amazon Product Page
+                    </li>
+                    <li onclick="document.getElementById('url-input').value='https://www.instagram.com/nike'">
+                        Instagram Business Page
+                    </li>
+                    <li onclick="document.getElementById('url-input').value='https://medium.com/topic/technology'">
+                        Blog Article
+                    </li>
+                </ul>
+            </div>
+        `;
     }
 
     // Add these styles to handle server status messages
@@ -115,19 +136,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Update analytics based on scraped data
-    function updateAnalyticsFromContent(content) {
-        // Calculate metrics based on content
+    function updateAnalyticsFromContent(content, url) {
+        // Calculate metrics based on content and URL type
         const wordCount = content.split(' ').length;
-        const impressions = Math.floor(wordCount * 2.5);
-        const ctr = ((wordCount > 100 ? 4.2 : 2.8) + Math.random()).toFixed(1);
-        const conversions = Math.floor(impressions * (parseFloat(ctr) / 100));
+        const qualityScore = Math.min(1, wordCount / 400); // Cap at 400 words
 
-        // Update the analytics display with calculated values
+        // Determine URL type for accurate metrics
+        const urlType = url.includes('product') || url.includes('shop') ? 'ecommerce' : 
+                       url.includes('blog') ? 'content' : 'general';
+        
+        const metrics = {
+            ecommerce: { ctr: 6.8, conv: 3.5 },
+            content: { ctr: 4.2, conv: 2.5 },
+            general: { ctr: 3.5, conv: 1.8 }
+        }[urlType];
+
+        // Calculate base metrics
+        const impressions = Math.floor(5000 + (qualityScore * 15000));
+        const clicks = Math.floor(impressions * (metrics.ctr / 100));
+        const conversions = Math.floor(clicks * (metrics.conv / 100));
+
+        // Update display
         impressionsElement.textContent = impressions.toLocaleString();
-        ctrElement.textContent = ctr + '%';
+        ctrElement.textContent = `${metrics.ctr}%`;
         conversionsElement.textContent = conversions.toLocaleString();
 
-        // Animate the cards to draw attention
+        // Animate update
         gsap.from(analyticCards, {
             scale: 0.95,
             duration: 0.5,
@@ -135,6 +169,8 @@ document.addEventListener('DOMContentLoaded', () => {
             stagger: 0.1,
             ease: "back.out"
         });
+
+        return { impressions, ctr: metrics.ctr, conversions };
     }
 
     // Add URL suggestions
@@ -203,11 +239,19 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        // Clear old cache if it's been more than 1 hour
+        const cachedData = localStorage.getItem(`metrics_${url}`);
+        if (cachedData) {
+            const data = JSON.parse(cachedData);
+            if (Date.now() - data.timestamp > 3600000) {
+                localStorage.removeItem(`metrics_${url}`);
+            }
+        }
+
         dataContainer.innerHTML = `
             <div class="loading">
                 <div class="loading-spinner"></div>
                 <p>Processing URL...</p>
-                <p>This might take a moment</p>
             </div>
         `;
         scrapeBtn.disabled = true;
@@ -216,86 +260,65 @@ document.addEventListener('DOMContentLoaded', () => {
             const response = await fetch(`http://localhost:3000/scrape?url=${encodeURIComponent(url)}`);
             const result = await response.json();
 
-            // Always show analysis results, even if limited
+            if (result.metrics) {
+                const metrics = {
+                    impressions: parseInt(result.metrics.impressions) || 0,
+                    clicks: parseInt(result.metrics.clicks) || 0,
+                    conversions: parseInt(result.metrics.conversions) || 0
+                };
+
+                // Use the server's CTR if available; otherwise calculate
+                const serverCtr = parseFloat(result.metrics.ctr);
+                const ctr = !isNaN(serverCtr)
+                    ? serverCtr.toFixed(2)
+                    : (metrics.impressions > 0
+                        ? ((metrics.clicks / metrics.impressions) * 100).toFixed(2)
+                        : "0.00");
+
+                impressionsElement.textContent = metrics.impressions.toLocaleString();
+                ctrElement.textContent = `${ctr}%`;
+                conversionsElement.textContent = metrics.conversions.toLocaleString();
+
+                updatePerformanceCharts({
+                    impressions: metrics.impressions,
+                    clicks: metrics.clicks,
+                    conversions: metrics.conversions,
+                    ctr: parseFloat(ctr)
+                });
+            }
+
             let analysisContent = '';
-            
             if (result.data && result.data.length > 0) {
                 analysisContent = result.data.map(item => `<p>${item}</p>`).join('');
             } else {
-                analysisContent = `
-                    <p>Basic Analysis:</p>
-                    <ul>
-                        <li>URL Processed: ${url}</li>
-                        <li>Content Type: Web Page</li>
-                        <li>Generated Sample Metrics</li>
-                    </ul>
-                `;
+                analysisContent = '<p>Analysis data not available.</p>';
             }
 
-            // Show images if available
-            const imagesSection = result.images && result.images.length > 0 ? `
-                <div class="ad-images-section">
-                    <h3 class="section-title">Advertisement Media</h3>
-                    <div class="ad-images-grid">
-                        ${result.images.map(img => `
-                            <div class="ad-image-card">
-                                <img src="${img.url}" alt="${img.alt}" 
-                                    onerror="this.onerror=null; this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1 1%22/>';">
-                                <p class="image-caption">${img.alt}</p>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            ` : '';
-
-            // Update the display with available data
             dataContainer.innerHTML = `
                 <div class="analysis-result">
-                    ${imagesSection}
                     <h3 class="section-title">Content Analysis</h3>
                     ${analysisContent}
                 </div>
             `;
 
-            // Update metrics
-            if (result.metrics) {
-                impressionsElement.textContent = result.metrics.impressions.toLocaleString();
-                ctrElement.textContent = result.metrics.ctr + '%';
-                conversionsElement.textContent = result.metrics.conversions.toLocaleString();
-
-                // Animate metrics update
-                gsap.from(analyticCards, {
-                    scale: 0.95,
-                    duration: 0.5,
-                    opacity: 0.5,
-                    stagger: 0.1,
-                    ease: "back.out"
-                });
-
-                // Update performance charts
-                updatePerformanceCharts(result.metrics);
-            }
-
         } catch (error) {
-            console.warn('Analysis notice:', error);
+            console.warn('Error fetching data:', error);
+            resetAnalytics(); // Reset to zero on error
             dataContainer.innerHTML = `
                 <div class="analysis-result">
-                    <h3 class="section-title">Limited Analysis Available</h3>
-                    <p>We've generated sample insights for this URL.</p>
-                    <p>Try another URL or check these suggestions:</p>
-                    <ul class="suggestion-list">
-                        <li>Ensure the URL is accessible</li>
-                        <li>Try a different page from the same site</li>
-                        <li>Check our sample URLs below</li>
-                    </ul>
+                    <h3 class="section-title">Error</h3>
+                    <p>Unable to fetch data. Please try again.</p>
                 </div>
             `;
-            
-            // Show suggestions below the message
-            showSuggestions();
         } finally {
             scrapeBtn.disabled = false;
         }
+    }
+
+    // Add helper function for metric validation
+    function validateMetric(value, fallback = 0) {
+        const num = parseFloat(value);
+        return !isNaN(num) && isFinite(num) ? num : fallback;
     }
 
     // Add styles for suggestions
@@ -404,6 +427,36 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     initializeMiniCharts();
+
+    document.querySelector('.view-details-btn').addEventListener('click', async (e) => {
+        e.preventDefault();
+        const url = urlInput.value.trim();
+        
+        if (!url) {
+            alert('Please enter and analyze a URL first');
+            return;
+        }
+
+        // Store the current metrics and analytics data
+        const currentData = {
+            url: url,
+            metrics: {
+                impressions: impressionsElement.textContent,
+                ctr: ctrElement.textContent,
+                conversions: conversionsElement.textContent
+            },
+            lastUpdated: new Date().toISOString()
+        };
+
+        // Store data in localStorage instead of sessionStorage for better persistence
+        localStorage.setItem('currentAnalysis', JSON.stringify(currentData));
+        window.location.href = `analytics.html?url=${encodeURIComponent(url)}`;
+    });
+
+    // Display original metrics on page load
+    document.getElementById('original-impressions').textContent = '10000';
+    document.getElementById('original-ctr').textContent = '2.5%';
+    document.getElementById('original-conversions').textContent = '250';
 });
 
 function initializeMiniCharts() {
@@ -520,3 +573,138 @@ document.querySelectorAll('.chart-btn').forEach(btn => {
         updatePerformanceCharts(currentMetrics, period);
     });
 });
+
+// Update getCurrentMetrics function
+function getCurrentMetrics() {
+    return {
+        impressions: parseInt(impressionsElement.textContent.replace(/,/g, '')) || 0,
+        clicks: parseInt(ctrElement.textContent) || 0,
+        conversions: parseInt(conversionsElement.textContent.replace(/,/g, '')) || 0,
+        ctr: parseFloat(ctrElement.textContent) || 0
+    };
+}
+
+// Add back URL suggestions with realistic examples
+const urlSuggestions = [
+    {
+        type: "E-commerce", 
+        urls: [
+            "https://www.amazon.com/dp/B08N5KWB9H",
+            "https://www.shopify.com/example-store",
+            "https://www.etsy.com/shop/CraftsAndDesigns"
+        ],
+        tip: "E-commerce sites typically have 2-3% conversion rates"
+    },
+    {
+        type: "Social Media",
+        urls: [
+            "https://www.instagram.com/nike",
+            "https://www.facebook.com/cocacola",
+            "https://www.linkedin.com/company/microsoft"
+        ],
+        tip: "Social media pages average 1.5-2.5% engagement rates"
+    },
+    {
+        type: "Content",
+        urls: [
+            "https://medium.com/topic/technology",
+            "https://wordpress.com/blog/marketing",
+            "https://blog.hubspot.com"
+        ],
+        tip: "Content sites average 3-5% click-through rates"
+    }
+];
+
+// Update metrics cache clearing
+function clearMetricsCache() {
+    localStorage.removeItem('metricsCache');
+}
+
+// Add cache cleanup on window close
+window.addEventListener('beforeunload', clearMetricsCache);
+
+// Modify fetchScrapedData to use URL-specific caching
+async function fetchScrapedData() {
+    const url = urlInput.value.trim();
+    
+    if (!url) {
+        showSuggestions();
+        resetAnalytics();
+        return;
+    }
+
+    // Clear old cache if it's been more than 1 hour
+    const cachedData = localStorage.getItem(`metrics_${url}`);
+    if (cachedData) {
+        const data = JSON.parse(cachedData);
+        if (Date.now() - data.timestamp > 3600000) {
+            localStorage.removeItem(`metrics_${url}`);
+        }
+    }
+
+    dataContainer.innerHTML = `
+        <div class="loading">
+            <div class="loading-spinner"></div>
+            <p>Processing URL...</p>
+        </div>
+    `;
+    scrapeBtn.disabled = true;
+
+    try {
+        const response = await fetch(`http://localhost:3000/scrape?url=${encodeURIComponent(url)}`);
+        const result = await response.json();
+
+        if (result.metrics) {
+            const metrics = {
+                impressions: parseInt(result.metrics.impressions) || 0,
+                clicks: parseInt(result.metrics.clicks) || 0,
+                conversions: parseInt(result.metrics.conversions) || 0
+            };
+
+            // Use the server's CTR if available; otherwise calculate
+            const serverCtr = parseFloat(result.metrics.ctr);
+            const ctr = !isNaN(serverCtr)
+                ? serverCtr.toFixed(2)
+                : (metrics.impressions > 0
+                    ? ((metrics.clicks / metrics.impressions) * 100).toFixed(2)
+                    : "0.00");
+
+            impressionsElement.textContent = metrics.impressions.toLocaleString();
+            ctrElement.textContent = `${ctr}%`;
+            conversionsElement.textContent = metrics.conversions.toLocaleString();
+
+            updatePerformanceCharts({
+                impressions: metrics.impressions,
+                clicks: metrics.clicks,
+                conversions: metrics.conversions,
+                ctr: parseFloat(ctr)
+            });
+        }
+
+        let analysisContent = '';
+        if (result.data && result.data.length > 0) {
+            analysisContent = result.data.map(item => `<p>${item}</p>`).join('');
+        } else {
+            analysisContent = '<p>Analysis data not available.</p>';
+        }
+
+        dataContainer.innerHTML = `
+            <div class="analysis-result">
+                <h3 class="section-title">Content Analysis</h3>
+                ${analysisContent}
+            </div>
+        `;
+
+    } catch (error) {
+        console.warn('Error fetching data:', error);
+        resetAnalytics(); // Reset to zero on error
+        dataContainer.innerHTML = `
+            <div class="analysis-result">
+                <h3 class="section-title">Error</h3>
+                <p>Unable to fetch data. Please try again.</p>
+            </div>
+        `;
+    } finally {
+        scrapeBtn.disabled = false;
+    }
+}

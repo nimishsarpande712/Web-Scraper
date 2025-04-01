@@ -21,29 +21,58 @@
         </nav>
         
         <div class="analytics-grid">
-            <div class="chart-card">
+            <div class="chart-card" id="engagement-card">
                 <h3>Engagement Overview</h3>
+                <div class="chart-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading data...</p>
+                </div>
                 <canvas id="mainEngagementChart"></canvas>
             </div>
             
-            <div class="chart-card">
+            <div class="chart-card" id="funnel-card">
                 <h3>Conversion Funnel</h3>
+                <div class="chart-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading data...</p>
+                </div>
                 <canvas id="funnelChart"></canvas>
             </div>
             
-            <div class="chart-card wide">
+            <div class="chart-card wide" id="timeline-card">
                 <h3>Performance Timeline</h3>
+                <div class="chart-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading data...</p>
+                </div>
                 <canvas id="timelineChart"></canvas>
             </div>
             
-            <div class="chart-card">
+            <div class="chart-card" id="demographics-card">
                 <h3>Audience Demographics</h3>
+                <div class="chart-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading data...</p>
+                </div>
                 <canvas id="demographicsChart"></canvas>
             </div>
             
-            <div class="chart-card">
+            <div class="chart-card" id="device-card">
                 <h3>Device Distribution</h3>
+                <div class="chart-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading data...</p>
+                </div>
                 <canvas id="deviceChart"></canvas>
+            </div>
+            
+            <div class="chart-card wide" id="social-card">
+                <h3>Social Media Performance</h3>
+                <div class="chart-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading data...</p>
+                </div>
+                <canvas id="socialMetricsChart"></canvas>
             </div>
         </div>
     </div>
